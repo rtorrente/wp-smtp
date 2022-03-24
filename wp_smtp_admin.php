@@ -13,8 +13,8 @@ if (isset($_POST['wp_smtp_update']) && isset($_POST['wp_smtp_nonce_update'])) {
     $this->wsOptions["smtpsecure"] = sanitize_text_field( trim( $_POST['wp_smtp_smtpsecure'] ) );
     $this->wsOptions["port"] = is_numeric( trim( $_POST['wp_smtp_port'] ) ) ? trim( $_POST['wp_smtp_port'] ) : '';
     $this->wsOptions["smtpauth"] = sanitize_text_field( trim( $_POST['wp_smtp_smtpauth'] ) );
-    $this->wsOptions["username"] = defined( 'WP_SMTP_USER' ) ? WP_SMTP_USER : sanitize_text_field( trim( $_POST['wp_smtp_username'] ) );
-    $this->wsOptions["password"] = defined( 'WP_SMTP_PASS' ) ? WP_SMTP_PASS : sanitize_text_field( trim( $_POST['wp_smtp_password'] ) );
+    $this->wsOptions["username"] = base64_encode( defined( 'WP_SMTP_USER' ) ? WP_SMTP_USER : sanitize_text_field( trim( $_POST['wp_smtp_username'] ) ) );
+    $this->wsOptions["password"] = base64_encode( defined( 'WP_SMTP_PASS' ) ? WP_SMTP_PASS : sanitize_text_field( trim( $_POST['wp_smtp_password'] ) ) );
     $this->wsOptions["deactivate"] = ( isset($_POST['wp_smtp_deactivate'] ) ) ? sanitize_text_field( trim( $_POST['wp_smtp_deactivate'] ) ) : '';
 
     update_option("wp_smtp_options", $this->wsOptions);
@@ -166,7 +166,7 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
                 </th>
                 <td>
                     <label>
-                        <input type="text" name="wp_smtp_username" value="<?php echo $this->wsOptions["username"]; ?>"
+                        <input type="text" name="wp_smtp_username" value="<?php echo base64_decode( $this->wsOptions["username"] ); ?>"
                                size="43" style="width:272px;height:24px;"/>
                     </label>
                 </td>
@@ -177,7 +177,7 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
                 </th>
                 <td>
                     <label>
-                        <input type="password" name="wp_smtp_password" value="<?php echo $this->wsOptions["password"]; ?>"
+                        <input type="password" name="wp_smtp_password" value="<?php echo base64_decode( $this->wsOptions["password"] ); ?>"
                                size="43" style="width:272px;height:24px;"/>
                     </label>
                 </td>

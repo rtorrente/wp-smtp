@@ -111,8 +111,8 @@ class WP_SMTP {
 		$phpmailer->SMTPAuth = ($this->wsOptions["smtpauth"]=="yes") ? TRUE : FALSE;
 
 		if( $phpmailer->SMTPAuth ){
-			$phpmailer->Username = $this->wsOptions["username"];
-			$phpmailer->Password = $this->wsOptions["password"];
+			$phpmailer->Username = base64_decode( $this->wsOptions["username"] );
+			$phpmailer->Password = base64_decode( $this->wsOptions["password"] );
 		}
 	}
 
