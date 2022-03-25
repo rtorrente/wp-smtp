@@ -82,6 +82,7 @@ class WP_SMTP {
 
 		\WPSMTP\Table::install();
 
+		$this->backwards_encrypt_base64();
 	}
 
 	function wp_smtp_deactivate() {
@@ -129,6 +130,43 @@ class WP_SMTP {
 		return $action_links;
 	}
 
+	public function wp_smtp_is_base64( $data ){
+
+		$str = base64_decode($data, true);
+		if ($str === false) {
+			return false;
+		} else {
+			$b64 = base64_encode($str);
+
+			// Check if input string and real Base64 are identical
+			if ($data === $b64) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+	}
+
+	public function backwards_encrypt_base64(){
+		$options = get_option( 'wp_smtp_options' );
+		$changes = false;
+
+		if( '' != $options['username'] && '' != $options['password'] ){
+			if( !$this->wp_smtp_is_base64( $options['username'] ) ){
+				$options['username'] = base64_encode( $options['username'] );
+				$changes = true;
+			}
+
+			if( !$this->wp_smtp_is_base64( $options['password'] ) ){
+				$options['password'] = base64_encode( $options['password'] );
+				$changes = true;
+			}
+		}
+
+		if( $changes ){
+			update_option( 'wp_smtp_options', $options );
+		}
+	}
 }
 
 new WP_SMTP();
