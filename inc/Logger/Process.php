@@ -12,21 +12,25 @@ class Process {
 	public function __construct() {
 		global $wpdb;
 
-		add_filter( 'wp_mail', array( $this, 'log_mails' ), PHP_INT_MAX );
-		add_action( 'wp_mail_failed', array( $this, 'update_failed_status' ), PHP_INT_MAX );
 		$this->wsOptions = get_option( 'wp_smtp_options' );
+
+		if ( ! isset( $this->wsOptions['disable_logs'] ) || 'yes' !== $this->wsOptions['disable_logs'] ) {
+			add_filter( 'wp_mail', array( $this, 'log_mails' ), PHP_INT_MAX );
+		}
+
+		add_action( 'wp_mail_failed', array( $this, 'update_failed_status' ), PHP_INT_MAX );
+
 	}
 
-	function log_mails( $parts ) {
-		if( $this->wsOptions['disable_logs'] != 'yes' ) {
-			global $wpdb;
+	public function log_mails( $parts ) {
 
-			$data = $parts;
+		global $wpdb;
 
-			unset( $data['attachments'] );
+		$data = $parts;
 
-			$this->mail_id = Db::get_instance()->insert( $data );
-		}
+		unset( $data['attachments'] );
+
+		$this->mail_id = Db::get_instance()->insert( $data );
 
 		return $parts;
 	}
@@ -34,11 +38,12 @@ class Process {
 	/**
 	 * @param WP_Error $wp_error
 	 */
-	function update_failed_status( $wp_error ) {
-	
+	public function update_failed_status( $wp_error ) {
 
 		Admin::$phpmailer_error = $wp_error;
-		if( $this->wsOptions['disable_logs'] != 'yes' ) {
+
+		if ( ! isset( $this->wsOptions['disable_logs'] ) || 'yes' !== $this->wsOptions['disable_logs'] ) {
+
 			global $wpdb;
 			$data = $wp_error->get_error_data('wp_mail_failed' );
 

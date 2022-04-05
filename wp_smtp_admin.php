@@ -167,7 +167,7 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
                 </th>
                 <td>
                     <label>
-                        <input type="text" name="wp_smtp_username" value="<?php echo base64_decode( $this->wsOptions["username"] ); ?>"
+                        <input type="text" name="wp_smtp_username" value="<?php echo esc_attr( base64_decode( $this->wsOptions["username"] ) ); ?>"
                                size="43" style="width:272px;height:24px;"/>
                     </label>
                 </td>
@@ -178,7 +178,7 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
                 </th>
                 <td>
                     <label>
-                        <input type="password" name="wp_smtp_password" value="<?php echo base64_decode( $this->wsOptions["password"] ); ?>"
+                        <input type="password" name="wp_smtp_password" value="<?php echo esc_attr( base64_decode( $this->wsOptions["password"] ) ); ?>"
                                size="43" style="width:272px;height:24px;"/>
                     </label>
                 </td>
@@ -202,7 +202,7 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
                 <td>
                     <label>
                         <input type="checkbox" name="wp_smtp_disable_logs"
-                               value="yes" <?php if ($this->wsOptions["disable_logs"] == 'yes') echo 'checked="checked"'; ?> />
+                               value="yes" <?php if ( isset( $this->wsOptions['disable_logs'] ) && 'yes' === $this->wsOptions["disable_logs"] ) echo 'checked="checked"'; ?> />
                         <?php _e('Disable the email logging functionality.', 'wp-smtp'); ?>
                     </label>
                 </td>

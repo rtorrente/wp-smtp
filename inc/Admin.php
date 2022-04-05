@@ -19,13 +19,13 @@ class Admin {
 
 	public function add_menu() {
 		add_menu_page( __( 'WP SMTP'),  __( 'WP SMTP'), 'manage_options', 'wp-smtp/wp-smtp.php', array( $this, 'render_setup_menu' ) );
-		
-		if( $this->wsOptions['disable_logs'] != 'yes' ) {
+
+		if( ! isset( $this->wsOptions['disable_logs'] ) || 'yes' !== $this->wsOptions['disable_logs'] ) {
 			add_submenu_page( 'wp-smtp/wp-smtp.php',  __( 'Mail Logs'),  __( 'Mail Logs'), 'manage_options','wpsmtp_logs', array( $this, 'render_log_menu' ) );
 		}
 	}
 
-	function enqueue_scripts() {
+	public function enqueue_scripts() {
 
 		$screen = get_current_screen();
 
@@ -106,7 +106,7 @@ class Admin {
 		die();
 	}
 
-	function wpsmtp_delete_rows() {
+	public function wpsmtp_delete_rows() {
 		check_admin_referer('wpsmtp', 'security' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -118,7 +118,7 @@ class Admin {
 
 	}
 
-	function wpsmtp_delete_all_rows() {
+	public function wpsmtp_delete_all_rows() {
 		check_admin_referer('wpsmtp', 'security' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {

@@ -6,6 +6,7 @@ module.exports = function ( grunt ) {
 	require( 'load-grunt-tasks' )( grunt, { scope: 'devDependencies' } );
 
 	grunt.initConfig( {
+		pkg: grunt.file.readJSON( 'package.json' ),
 		// setting folder templates
 		dirs: {
 			css: 'assets/css',
@@ -175,7 +176,7 @@ module.exports = function ( grunt ) {
 					'!postcss.config.js',
 					'!webpack.config.js',
 					'!set_tags.sh',
-					'!download-monitor.zip',
+					'!wp-smtp.zip',
 					'!old/**',
 					'!nbproject/**'
 				],
@@ -187,12 +188,12 @@ module.exports = function ( grunt ) {
 			build: {
 				options: {
 					pretty: true,                           // Pretty print file sizes when logging.
-					archive: 'download-monitor.zip'
+					archive: '<%= pkg.name %>.zip'
 				},
 				expand: true,
 				cwd: 'build/',
 				src: [ '**/*' ],
-				dest: 'download-monitor/'
+				dest: '<%= pkg.name %>/'
 			}
 		},
 
