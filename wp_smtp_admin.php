@@ -190,7 +190,7 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
                     <label>
                         <input type="checkbox" name="wp_smtp_deactivate"
                                value="yes" <?php if ($this->wsOptions["deactivate"] == 'yes') echo 'checked="checked"'; ?> />
-                        <?php _e('Delete options while deactivate this plugin.', 'wp-smtp'); ?>
+                        <?php _e('Delete options when deactivating this plugin.', 'wp-smtp'); ?>
                     </label>
                 </td>
             </tr>
