@@ -19,7 +19,10 @@ class Admin {
 
 	public function add_menu() {
 		add_menu_page( __( 'WP SMTP'),  __( 'WP SMTP'), 'manage_options', 'wp-smtp/wp-smtp.php', array( $this, 'render_setup_menu' ) );
-		add_submenu_page( 'wp-smtp/wp-smtp.php',  __( 'Mail Logs'),  __( 'Mail Logs'), 'manage_options','wpsmtp_logs', array( $this, 'render_log_menu' ) );
+		
+		if( $this->wsOptions['disable_logs'] != 'yes' ) {
+			add_submenu_page( 'wp-smtp/wp-smtp.php',  __( 'Mail Logs'),  __( 'Mail Logs'), 'manage_options','wpsmtp_logs', array( $this, 'render_log_menu' ) );
+		}
 	}
 
 	function enqueue_scripts() {

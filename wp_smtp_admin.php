@@ -16,6 +16,7 @@ if (isset($_POST['wp_smtp_update']) && isset($_POST['wp_smtp_nonce_update'])) {
     $this->wsOptions["username"] = base64_encode( defined( 'WP_SMTP_USER' ) ? WP_SMTP_USER : sanitize_text_field( trim( $_POST['wp_smtp_username'] ) ) );
     $this->wsOptions["password"] = base64_encode( defined( 'WP_SMTP_PASS' ) ? WP_SMTP_PASS : sanitize_text_field( trim( $_POST['wp_smtp_password'] ) ) );
     $this->wsOptions["deactivate"] = ( isset($_POST['wp_smtp_deactivate'] ) ) ? sanitize_text_field( trim( $_POST['wp_smtp_deactivate'] ) ) : '';
+    $this->wsOptions["disable_logs"] = ( isset($_POST['wp_smtp_disable_logs'] ) ) ? sanitize_text_field( trim( $_POST['wp_smtp_disable_logs'] ) ) : '';
 
     update_option("wp_smtp_options", $this->wsOptions);
 
@@ -191,6 +192,18 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
                         <input type="checkbox" name="wp_smtp_deactivate"
                                value="yes" <?php if ($this->wsOptions["deactivate"] == 'yes') echo 'checked="checked"'; ?> />
                         <?php _e('Delete options when deactivating this plugin.', 'wp-smtp'); ?>
+                    </label>
+                </td>
+            </tr>
+            <tr valign="top">
+                <th scope="row">
+                    <?php _e('Disable Logs', 'wp-smtp'); ?>
+                </th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="wp_smtp_disable_logs"
+                               value="yes" <?php if ($this->wsOptions["disable_logs"] == 'yes') echo 'checked="checked"'; ?> />
+                        <?php _e('Disable the email logging functionality.', 'wp-smtp'); ?>
                     </label>
                 </td>
             </tr>
