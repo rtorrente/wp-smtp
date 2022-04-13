@@ -75,17 +75,20 @@ class Db {
 	public function get() {
 		$where = '';
 		$where_cols = array();
+		$prepare_array = array();
 		if ( isset($_GET['search']['value'] ) && ! empty( $_GET['search']['value'] ) ) {
 			$search = sanitize_text_field( $_GET['search']['value'] );
 
 			foreach ( $_GET['columns'] as $key => $col ) {
 				if ( $col['searchable'] && ! empty( $col['data'] ) && $col['data'] !== 'timestamp' ) {
-					$where_cols[] = "`{$col['data']}` LIKE '%$search%'";
+					$where_cols[]    = "%s LIKE %s";
+					$prepare_array[] = "{$col['data']}";
+					$prepare_array[] = '%' . $search . '%';
 				}
 			}
 
 			if ( ! empty( $where_cols ) ) {
-				$where .= ' WHERE ' . implode( ' OR ', $where_cols );
+				$where = implode( ' OR ', $where_cols );
 			}
 
 		}
@@ -101,19 +104,27 @@ class Db {
 
 		$limit_query = '';
 		if ( ! empty( $limit ) ) {
-			$limit_query = ' LIMIT ' . implode( ',', $limit );
+			$limit_query = implode( ',', $limit );
 		}
 
-		$order = ' ORDER BY `timestamp` desc';
+		$orderby = 'timestamp';
+		$order = 'DESC';
 		if ( ! empty( $_GET['order'][0] ) ) {
 			$col_num = $_GET['order'][0]['column'];
 			$col_name = $_GET['columns'][$col_num]['data'];
 			$order_dir = $_GET['order'][0]['dir'];
-			$order = " ORDER BY `{$col_name}` {$order_dir}";
+			$orderby = "{$col_name}";
+			$order = "{$order_dir}";
 		}
-
-		$sql = "SELECT * from {$this->table}{$where}{$order}{$limit_query};";
-
+		
+		//$sql = "SELECT * from {$this->table}{$where}{$order}{$limit_query};";
+		if ( ! empty( $prepare_array ) ) {
+			$prepare_array[] = $orderby;
+			$sql = $this->db->prepare( "SELECT * from {$this->table} WHERE {$where} ORDER BY %s {$order} LIMIT {$limit_query};", $prepare_array );
+		} else {
+			$sql = $this->db->prepare( "SELECT * from {$this->table} ORDER BY %s {$order} LIMIT {$limit_query};", $orderby );
+		}
+		var_dump($sql);die();
 		error_log( $sql );
 
 		return $this->db->get_results( $sql, ARRAY_A );
