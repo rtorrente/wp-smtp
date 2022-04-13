@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 /**
  * Plugin Name: WP SMTP
  * Description: WP SMTP can help us to send emails via SMTP instead of the PHP mail() function and email logger built-in.
- * Version: 1.2.4
+ * Version: 1.2.5
  * Author: WPChill
  * Author URI: https://www.wpchill.com/
  * Text Domain: wp-smtp
@@ -38,6 +38,7 @@ define( 'WPSMTP_PATH', plugin_dir_path( WPSMTP__FILE__ ) );
 define( 'WPSMTP_URL', plugins_url( '/', WPSMTP__FILE__ ) );
 define( 'WPSMTP_ASSETS_PATH', WPSMTP_PATH . 'assets/' );
 define( 'WPSMTP_ASSETS_URL', WPSMTP_URL . 'assets/' );
+define( 'WPSMTP_VERSION', '1.2.5' );
 
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -46,8 +47,10 @@ class WP_SMTP {
 	private $wsOptions;
 
 	public function __construct() {
+
 		$this->setup_vars();
 		$this->hooks();
+		$this->check_credentials( $this->wsOptions );
 	}
 
 	public function setup_vars(){
@@ -82,12 +85,12 @@ class WP_SMTP {
 
 		\WPSMTP\Table::install();
 
-		$this->backwards_encrypt_base64();
 	}
 
 	function wp_smtp_deactivate() {
 		if( $this->wsOptions['deactivate'] == 'yes' ) {
 			delete_option( 'wp_smtp_options' );
+			delete_option( 'wp_smtp_encrypted' );
 		}
 	}
 
@@ -130,42 +133,94 @@ class WP_SMTP {
 		return $action_links;
 	}
 
-	public function wp_smtp_is_base64( $data ){
+	/**
+	 * Check for credentials
+	 *
+	 * @param array $options WP SMTP options
+	 * 
+	 * @return mixed
+	 * @since 1.2.5
+	 */
+	private function check_credentials( $options = array() ) {
 
-		$str = base64_decode($data, true);
-		if ($str === false) {
-			return false;
-		} else {
-			$b64 = base64_encode($str);
+		if ( ! is_admin() || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
+			return;
+		}
 
-			// Check if input string and real Base64 are identical
-			if ($data === $b64) {
+		$encription = get_option( 'wp_smtp_encrypted' );
+
+		// Connecting to host can be a resource heavy task, so we only do it if we need to.
+		if ( 'encrypted' === $encription ) {
+			return;
+		}
+		// Connecting to host can be a resource heavy task, so we only do it if we need to.
+		if ( 'not_encrypted' === $encription ) {
+			add_action( 'admin_notices', array( $this, 'retype_credentials_notice' ) );
+			return;
+		}
+
+		if ( ! isset( $options['username'] ) || ! isset( $options['password'] ) || ! isset( $options['host'] ) || ! isset( $options['port'] ) || ! isset( $options['smtpauth'] ) || ! isset( $options['smtpsecure'] ) || '' === $options['username'] || '' === $options['password'] || '' === $options['host'] || '' === $options['port'] || '' === $options['smtpauth'] ) {
+			return;
+		}
+
+		global $phpmailer;
+
+		// (Re)create it, if it's gone missing.
+		if ( ! ( $phpmailer instanceof PHPMailer\PHPMailer\PHPMailer ) ) {
+			require_once ABSPATH . WPINC . '/PHPMailer/PHPMailer.php';
+			require_once ABSPATH . WPINC . '/PHPMailer/SMTP.php';
+			require_once ABSPATH . WPINC . '/PHPMailer/Exception.php';
+			$phpmailer = new PHPMailer\PHPMailer\PHPMailer( true );
+		}
+
+		$phpmailer->isSMTP();
+		$phpmailer->Mailer   = "smtp";
+		$phpmailer->Host     = $options['host'];
+		$phpmailer->SMTPAuth = 'yes' === $options['smtpauth']; // Ask it to use authenticate using the Username and Password properties
+		$phpmailer->Port     = $options['port'];
+
+		if ( $phpmailer->SMTPAuth ) {
+			$phpmailer->Username = base64_decode( $options['username'] );
+			$phpmailer->Password = base64_decode( $options['password'] );
+		}
+
+		$phpmailer->SMTPSecure = $options['smtpsecure']; // preferable but optional
+
+		try {
+			if ( $phpmailer->smtpConnect() ) {
+				update_option( 'wp_smtp_encrypted', 'encrypted' );
 				return true;
 			} else {
+				add_action( 'admin_notices', array( $this, 'retype_credentials_notice' ) );
+				update_option( 'wp_smtp_encrypted', 'not_encrypted' );
 				return false;
 			}
+		} catch ( Exception $e ) {
+			add_action( 'admin_notices', array( $this, 'retype_credentials_notice' ) );
+			update_option( 'wp_smtp_encrypted', 'not_encrypted' );
+			return false;
 		}
 	}
 
-	public function backwards_encrypt_base64(){
-		$options = get_option( 'wp_smtp_options' );
-		$changes = false;
-
-		if( '' != $options['username'] && '' != $options['password'] ){
-			if( !$this->wp_smtp_is_base64( $options['username'] ) ){
-				$options['username'] = base64_encode( $options['username'] );
-				$changes = true;
-			}
-
-			if( !$this->wp_smtp_is_base64( $options['password'] ) ){
-				$options['password'] = base64_encode( $options['password'] );
-				$changes = true;
-			}
+	/**
+	 * Add notice to retype credentials and info about the server
+	 *
+	 * @return void
+	 * @since 1.2.5
+	 */
+	public function retype_credentials_notice() {
+	?>
+	<div class="notice notice-error is-dismissible">
+		<h3><?php echo esc_html__( 'WP SMTP connection error', 'wp-smtp' ); ?></h3>
+		<p><?php echo esc_html__( 'Seems like there are some problems with the enterd information. Please re-check & re-enter it and hit the "Save changes" button.', 'wp-smtp' ); ?></p>
+		<?php
+		// This might be a problem introduced in version 1.2.4 of the plugin when we started to base64_encode the username and password. Let the user know
+		if ( version_compare( '1.2.8', WPSMTP_VERSION, '>' ) ) {
+			echo '<p>' . esc_html__( 'We recently made some changes regarding how we save the username and password in the database, namely we are encrypting them, so that might be the reason for the connection error. Re-entering and saving them should solve the issue.', 'wp-smtp' ) . '</p>';
 		}
-
-		if( $changes ){
-			update_option( 'wp_smtp_options', $options );
-		}
+		?>
+	</div>
+	<?php
 	}
 }
 

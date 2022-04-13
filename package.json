@@ -1,7 +1,7 @@
 {
   "name": "wp-smtp",
   "title": "WP SMTP",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "homepage": "https://www.wpchill.com",
   "main": "Gruntfile.js",
   "devDependencies": {

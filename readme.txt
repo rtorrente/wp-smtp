@@ -4,7 +4,7 @@ Contributors: wpchill,silkalns,raldea89,giucu91,andylukak
 License: GPLv3 or later
 Requires at least: 2.7
 Tested up to: 5.9
-Stable tag: 1.2.4
+Stable tag: 1.2.5
 
 WP SMTP can help us to send emails via SMTP instead of the PHP mail() function.
 
@@ -34,6 +34,9 @@ WP SMTP plugin was originally created by BoLiQuan. It is now owned and maintaine
 4. For more information of this plugin, please visit: [Plugin Homepage](https://wpsmtpmail.com/ "WP SMTP").
 
 == Changelog ==
+
+= 1.2.5 =
+Fixed: base64_encoding problem for passwords and users that may appear that they are already in base64_encoding but in reality they are not
 
 = 1.2.4 =
 Changed: Added base64 encode for username and passwords ( https://github.com/WPChill/wp-smtp/issues/2 )

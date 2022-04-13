@@ -19,6 +19,7 @@ if (isset($_POST['wp_smtp_update']) && isset($_POST['wp_smtp_nonce_update'])) {
     $this->wsOptions["disable_logs"] = ( isset($_POST['wp_smtp_disable_logs'] ) ) ? sanitize_text_field( trim( $_POST['wp_smtp_disable_logs'] ) ) : '';
 
     update_option("wp_smtp_options", $this->wsOptions);
+    delete_option( 'wp_smtp_encrypted' );
 
     if ( ! is_email($this->wsOptions["from"] ) ) {
         echo '<div id="message" class="updated fade"><p><strong>' . __("The field \"From\" must be a valid email address!", "WP-SMTP") . '</strong></p></div>';
