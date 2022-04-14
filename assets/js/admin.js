@@ -41,7 +41,7 @@ jQuery(document).ready(function ($) {
                     form.submit();
                 } else {
                     submitButton.val('Save Changes');
-                    alert(response.data.error);
+                    submitButton.after('<p class="wp-smtp error">'+response.data.error+'</p>');
                 }
             }
         };

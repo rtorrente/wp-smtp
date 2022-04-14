@@ -51,6 +51,7 @@ class Admin {
 		}
 
 		if ( false !== strpos( $screen->base, 'wp-smtp/wp-smtp' ) ) {
+			wp_enqueue_style( 'wpsmtp-admin', WPSMTP_ASSETS_URL . 'css/admin.css' );
 			wp_enqueue_script( 'wp-smtp-admin', WPSMTP_ASSETS_URL . 'js/admin.js', array( 'jquery' ), false, true );
 			wp_localize_script( 'wp-smtp-admin', 'wp_smtp_admin_vars', array(
 				'nonce' => wp_create_nonce( 'wpsmtp_settings_nonce' ),
