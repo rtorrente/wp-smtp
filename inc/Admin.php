@@ -55,6 +55,8 @@ class Admin {
 			wp_enqueue_script( 'wp-smtp-admin', WPSMTP_ASSETS_URL . 'js/admin.js', array( 'jquery' ), false, true );
 			wp_localize_script( 'wp-smtp-admin', 'wp_smtp_admin_vars', array(
 				'nonce' => wp_create_nonce( 'wpsmtp_settings_nonce' ),
+				'save_changes' => __( 'Save Changes', 'wp-smtp' ),
+				'checking_credentials' => __( 'Checking Credentials...', 'wp-smtp' ),
 			) );
 
 		}

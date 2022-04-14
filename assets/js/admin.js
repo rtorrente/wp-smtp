@@ -4,7 +4,7 @@ jQuery(document).ready(function ($) {
             event.preventDefault();
 
             let submitButton = $(this);
-            submitButton.val('Checking credentials...');
+            submitButton.val(wp_smtp_admin_vars.checking_credentials);
             let form = $(this).closest('form');
             let inputs = {};
 
@@ -40,7 +40,7 @@ jQuery(document).ready(function ($) {
                 if (response.success) {
                     form.submit();
                 } else {
-                    submitButton.val('Save Changes');
+                    submitButton.val(wp_smtp_admin_vars.save_changes);
                     submitButton.after('<p class="wp-smtp error">'+response.data.error+'</p>');
                 }
             }
