@@ -11,28 +11,30 @@ if (isset($_POST['wp_smtp_update']) && isset($_POST['wp_smtp_nonce_update'])) {
         wp_die('Security check not passed!');
     }
     
-    $this->wsOptions = array();
-    $this->wsOptions["from"] = sanitize_email( wp_unslash( trim( $_POST['wp_smtp_from'] ) ) );
-    $this->wsOptions["fromname"] = sanitize_text_field( trim( $_POST['wp_smtp_fromname'] ) );
-    $this->wsOptions["host"] = sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_host'] ) ) );
-    $this->wsOptions["smtpsecure"] = sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_smtpsecure'] ) ) );
-    $this->wsOptions["port"] = is_numeric( trim( $_POST['wp_smtp_port'] ) ) ? absint( trim( $_POST['wp_smtp_port'] ) ) : '';
-    $this->wsOptions["smtpauth"] = sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_smtpauth'] ) ) );
-    $this->wsOptions["username"] = base64_encode( defined( 'WP_SMTP_USER' ) ? WP_SMTP_USER : sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_username'] ) ) ) );
-    $this->wsOptions["password"] = base64_encode( defined( 'WP_SMTP_PASS' ) ? WP_SMTP_PASS : sanitize_text_field( trim( $_POST['wp_smtp_password'] ) ) );
-    $this->wsOptions["deactivate"] = ( isset($_POST['wp_smtp_deactivate'] ) ) ? sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_deactivate'] ) ) ) : '';
+    $this->wsOptions                 = array();
+    $this->wsOptions["from"]         = sanitize_email( wp_unslash( trim( $_POST['wp_smtp_from'] ) ) );
+    $this->wsOptions["fromname"]     = sanitize_text_field( trim( $_POST['wp_smtp_fromname'] ) );
+    $this->wsOptions["host"]         = sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_host'] ) ) );
+    $this->wsOptions["smtpsecure"]   = sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_smtpsecure'] ) ) );
+    $this->wsOptions["port"]         = is_numeric( trim( $_POST['wp_smtp_port'] ) ) ? absint( trim( $_POST['wp_smtp_port'] ) ) : '';
+    $this->wsOptions["smtpauth"]     = sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_smtpauth'] ) ) );
+    $this->wsOptions["username"]     = base64_encode( defined( 'WP_SMTP_USER' ) ? WP_SMTP_USER : sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_username'] ) ) ) );
+    $this->wsOptions["password"]     = base64_encode( defined( 'WP_SMTP_PASS' ) ? WP_SMTP_PASS : sanitize_text_field( trim( $_POST['wp_smtp_password'] ) ) );
+    $this->wsOptions["deactivate"]   = ( isset($_POST['wp_smtp_deactivate'] ) ) ? sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_deactivate'] ) ) ) : '';
     $this->wsOptions["disable_logs"] = ( isset($_POST['wp_smtp_disable_logs'] ) ) ? sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_disable_logs'] ) ) ) : '';
 
     update_option("wp_smtp_options", $this->wsOptions);
-    delete_option( 'wp_smtp_encrypted' );
 
     if ( ! is_email($this->wsOptions["from"] ) ) {
-        echo '<div id="message" class="updated fade"><p><strong>' . __("The field \"From\" must be a valid email address!", "WP-SMTP") . '</strong></p></div>';
+        echo '<div id="message" class="updated fade"><p><strong>' . esc_html__("The field \"From\" must be a valid email address!", "WP-SMTP") . '</strong></p></div>';
     } elseif (empty($this->wsOptions["host"])) {
-        echo '<div id="message" class="updated fade"><p><strong>' . __("The field \"SMTP Host\" can not be left blank!", "WP-SMTP") . '</strong></p></div>';
+        echo '<div id="message" class="updated fade"><p><strong>' . esc_html__("The field \"SMTP Host\" can not be left blank!", "WP-SMTP") . '</strong></p></div>';
     } else {
-        echo '<div id="message" class="updated fade"><p><strong>' . __("Options saved.", "WP-SMTP") . '</strong></p></div>';
+        echo '<div id="message" class="updated fade"><p><strong>' . esc_html__("Options saved.", "WP-SMTP") . '</strong></p></div>';
     }
+
+    delete_option( 'wp_smtp_status' );
+    do_action( 'wp_smtp_admin_update' );
 }
 
 // Catch the test form
@@ -42,11 +44,11 @@ if ( isset( $_POST['wp_smtp_test'] ) && isset( $_POST['wp_smtp_nonce_test'] ) ) 
         wp_die('Security check not passed!');
     }
 
-    $to = sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_to'] ) ) );
+    $to      = sanitize_email( wp_unslash( trim( $_POST['wp_smtp_to'] ) ) );
     $subject = sanitize_text_field( trim( $_POST['wp_smtp_subject'] ) );
     $message = sanitize_textarea_field( trim( $_POST['wp_smtp_message'] ) );
-    $status = false;
-    $class = 'error';
+    $status  = false;
+    $class   = 'error';
 
     if ( ! empty( $to ) && is_email( $to ) && ! empty( $subject ) && ! empty( $message ) ) {
         try {
@@ -67,7 +69,7 @@ if ( isset( $_POST['wp_smtp_test'] ) && isset( $_POST['wp_smtp_nonce_test'] ) ) 
         }
     }
 
-    echo '<div id="message" class="notice notice-' . $class . ' is-dismissible"><p><strong>' . $status . '</strong></p></div>';
+    echo '<div id="message" class="notice notice-' . esc_attr( $class ) . ' is-dismissible"><p><strong>' . wp_kses_post( $status ) . '</strong></p></div>';
 }
 
 $ws_nonce = wp_create_nonce('my_ws_nonce');
@@ -83,40 +85,40 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
         <table class="form-table">
             <tr valign="top">
                 <th scope="row">
-                    <?php _e('From', 'wp-smtp'); ?>
+                    <?php esc_html_e('From', 'wp-smtp'); ?>
                 </th>
                 <td>
                     <label>
-                        <input type="email" name="wp_smtp_from" value="<?php echo $this->wsOptions["from"]; ?>" size="43"
+                        <input type="email" name="wp_smtp_from" value="<?php echo esc_attr( $this->wsOptions["from"] ); ?>" size="43"
                                style="width:272px;height:24px;" required/>
                     </label>
                 </td>
             </tr>
             <tr valign="top">
                 <th scope="row">
-                    <?php _e('From Name', 'wp-smtp'); ?>
+                    <?php esc_html_e('From Name', 'wp-smtp'); ?>
                 </th>
                 <td>
                     <label>
-                        <input type="text" name="wp_smtp_fromname" value="<?php echo $this->wsOptions["fromname"]; ?>"
+                        <input type="text" name="wp_smtp_fromname" value="<?php echo esc_attr( $this->wsOptions["fromname"] ); ?>"
                                size="43" style="width:272px;height:24px;" required />
                     </label>
                 </td>
             </tr>
             <tr valign="top">
                 <th scope="row">
-                    <?php _e('SMTP Host', 'wp-smtp'); ?>
+                    <?php esc_html_e('SMTP Host', 'wp-smtp'); ?>
                 </th>
                 <td>
                     <label>
-                        <input type="text" name="wp_smtp_host" value="<?php echo $this->wsOptions["host"]; ?>" size="43"
+                        <input type="text" name="wp_smtp_host" value="<?php echo esc_attr( $this->wsOptions["host"] ); ?>" size="43"
                                style="width:272px;height:24px;" required />
                     </label>
                 </td>
             </tr>
             <tr valign="top">
                 <th scope="row">
-                    <?php _e('SMTP Secure', 'wp-smtp'); ?>
+                    <?php esc_html_e('SMTP Secure', 'wp-smtp'); ?>
                 </th>
                 <td>
                     <label>
@@ -140,18 +142,18 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
             </tr>
             <tr valign="top">
                 <th scope="row">
-                    <?php _e('SMTP Port', 'wp-smtp'); ?>
+                    <?php esc_html_e('SMTP Port', 'wp-smtp'); ?>
                 </th>
                 <td>
                     <label>
-                        <input type="text" name="wp_smtp_port" value="<?php echo $this->wsOptions["port"]; ?>" size="43"
+                        <input type="text" name="wp_smtp_port" value="<?php echo esc_attr( $this->wsOptions["port"] ); ?>" size="43"
                                style="width:272px;height:24px;"/>
                     </label>
                 </td>
             </tr>
             <tr valign="top">
                 <th scope="row">
-                    <?php _e('SMTP Authentication', 'wp-smtp'); ?>
+                    <?php esc_html_e('SMTP Authentication', 'wp-smtp'); ?>
                 </th>
                 <td>
                     <label>
@@ -169,7 +171,7 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
             </tr>
             <tr valign="top">
                 <th scope="row">
-                    <?php _e('Username', 'wp-smtp'); ?>
+                    <?php esc_html_e('Username', 'wp-smtp'); ?>
                 </th>
                 <td>
                     <label>
@@ -180,7 +182,7 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
             </tr>
             <tr valign="top">
                 <th scope="row">
-                    <?php _e('Password', 'wp-smtp'); ?>
+                    <?php esc_html_e('Password', 'wp-smtp'); ?>
                 </th>
                 <td>
                     <label>
@@ -191,25 +193,25 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
             </tr>
             <tr valign="top">
                 <th scope="row">
-                    <?php _e('Delete Options', 'wp-smtp'); ?>
+                    <?php esc_html_e('Delete Options', 'wp-smtp'); ?>
                 </th>
                 <td>
                     <label>
                         <input type="checkbox" name="wp_smtp_deactivate"
                                value="yes" <?php if ($this->wsOptions["deactivate"] == 'yes') echo 'checked="checked"'; ?> />
-                        <?php _e('Delete options when deactivating this plugin.', 'wp-smtp'); ?>
+                        <?php esc_html_e('Delete options when deactivating this plugin.', 'wp-smtp'); ?>
                     </label>
                 </td>
             </tr>
             <tr valign="top">
                 <th scope="row">
-                    <?php _e('Disable Logs', 'wp-smtp'); ?>
+                    <?php esc_html_e('Disable Logs', 'wp-smtp'); ?>
                 </th>
                 <td>
                     <label>
                         <input type="checkbox" name="wp_smtp_disable_logs"
                                value="yes" <?php if ( isset( $this->wsOptions['disable_logs'] ) && 'yes' === $this->wsOptions["disable_logs"] ) echo 'checked="checked"'; ?> />
-                        <?php _e('Disable the email logging functionality.', 'wp-smtp'); ?>
+                        <?php esc_html_e('Disable the email logging functionality.', 'wp-smtp'); ?>
                     </label>
                 </td>
             </tr>
@@ -218,17 +220,17 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
         <p class="submit">
             <input type="hidden" name="wp_smtp_update" value="update"/>
             <input type="hidden" name="wp_smtp_nonce_update" value="<?php echo $ws_nonce; ?>"/>
-            <input type="submit" class="button-primary" name="Submit" value="<?php _e('Save Changes'); ?>"/>
+            <input type="submit" class="button-primary" name="Submit" value="<?php esc_attr_e('Save Changes'); ?>"/>
         </p>
 
     </form>
 
     <form action="" method="post" enctype="multipart/form-data" name="wp_smtp_testform">
-        <h2><?php _e( 'Test your settings', 'wp-smtp' ); ?></h2>
+        <h2><?php esc_html_e( 'Test your settings', 'wp-smtp' ); ?></h2>
         <table class="form-table">
             <tr valign="top">
                 <th scope="row">
-                    <?php _e('To:', 'wp-smtp'); ?>
+                    <?php esc_html_e('To:', 'wp-smtp'); ?>
                 </th>
                 <td>
                     <label>
@@ -238,7 +240,7 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
             </tr>
             <tr valign="top">
                 <th scope="row">
-                    <?php _e('Subject:', 'wp-smtp'); ?>
+                    <?php esc_html_e('Subject:', 'wp-smtp'); ?>
                 </th>
                 <td>
                     <label>
@@ -248,7 +250,7 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
             </tr>
             <tr valign="top">
                 <th scope="row">
-                    <?php _e('Message:', 'wp-smtp'); ?>
+                    <?php esc_html_e('Message:', 'wp-smtp'); ?>
                 </th>
                 <td>
                     <label>
@@ -261,6 +263,6 @@ $ws_nonce = wp_create_nonce('my_ws_nonce');
         <p class="submit">
             <input type="hidden" name="wp_smtp_test" value="test"/>
             <input type="hidden" name="wp_smtp_nonce_test" value="<?php echo $ws_nonce; ?>"/>
-            <input type="submit" class="button-primary" value="<?php _e('Send Test', 'wp-smtp'); ?>"/>
+            <input type="submit" class="button-primary" value="<?php esc_attr_e('Send Test', 'wp-smtp'); ?>"/>
         </p>
     </form>

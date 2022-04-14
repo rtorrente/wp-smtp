@@ -64,6 +64,7 @@ class WP_SMTP {
 		add_filter( 'plugin_action_links', array( $this, 'wp_smtp_settings_link' ), 10, 2 );
 		add_action( 'init', array( $this,'load_textdomain' ) );
 		add_action( 'phpmailer_init', array( $this,'wp_smtp' ) );
+		add_action( 'wp_smtp_admin_update', array( $this, 'check_credentials' ) );
 
 		new WPSMTP\Admin();
 		new WPSMTP\Process();
@@ -141,13 +142,13 @@ class WP_SMTP {
 	 * @return mixed
 	 * @since 1.2.5
 	 */
-	private function check_credentials( $options = array() ) {
+	public function check_credentials( $options = array() ) {
 
 		if ( ! is_admin() || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
 			return;
 		}
 
-		$encription = get_option( 'wp_smtp_encrypted' );
+		$encription = get_option( 'wp_smtp_status' );
 
 		// Connecting to host can be a resource heavy task, so we only do it if we need to.
 		if ( 'encrypted' === $encription ) {
@@ -157,6 +158,10 @@ class WP_SMTP {
 		if ( 'not_encrypted' === $encription ) {
 			add_action( 'admin_notices', array( $this, 'retype_credentials_notice' ) );
 			return;
+		}
+
+		if ( empty( $options ) ) {
+			$options = get_option( 'wp_smtp_options' );
 		}
 
 		if ( ! isset( $options['username'] ) || ! isset( $options['password'] ) || ! isset( $options['host'] ) || ! isset( $options['port'] ) || ! isset( $options['smtpauth'] ) || ! isset( $options['smtpsecure'] ) || '' === $options['username'] || '' === $options['password'] || '' === $options['host'] || '' === $options['port'] || '' === $options['smtpauth'] ) {
@@ -188,16 +193,16 @@ class WP_SMTP {
 
 		try {
 			if ( $phpmailer->smtpConnect() ) {
-				update_option( 'wp_smtp_encrypted', 'encrypted' );
+				update_option( 'wp_smtp_status', 'encrypted' );
 				return true;
 			} else {
 				add_action( 'admin_notices', array( $this, 'retype_credentials_notice' ) );
-				update_option( 'wp_smtp_encrypted', 'not_encrypted' );
+				update_option( 'wp_smtp_status', 'not_encrypted' );
 				return false;
 			}
 		} catch ( Exception $e ) {
 			add_action( 'admin_notices', array( $this, 'retype_credentials_notice' ) );
-			update_option( 'wp_smtp_encrypted', 'not_encrypted' );
+			update_option( 'wp_smtp_status', 'not_encrypted' );
 			return false;
 		}
 	}

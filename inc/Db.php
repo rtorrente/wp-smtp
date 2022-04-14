@@ -81,9 +81,9 @@ class Db {
 
 			foreach ( $_GET['columns'] as $key => $col ) {
 				if ( $col['searchable'] && ! empty( $col['data'] ) && $col['data'] !== 'timestamp' ) {
-					$where_cols[]    = "%s LIKE %s";
-					$prepare_array[] = "{$col['data']}";
-					$prepare_array[] = '%' . $search . '%';
+					$column          = sanitize_text_field( wp_unslash( $col['data'] ) );
+					$where_cols[]    = "`{$column}` LIKE %s";
+					$prepare_array[] = '%' . $this->db->esc_like( $search ) . '%';
 				}
 			}
 
@@ -109,22 +109,23 @@ class Db {
 
 		$orderby = 'timestamp';
 		$order = 'DESC';
+
 		if ( ! empty( $_GET['order'][0] ) ) {
-			$col_num = $_GET['order'][0]['column'];
-			$col_name = $_GET['columns'][$col_num]['data'];
-			$order_dir = $_GET['order'][0]['dir'];
-			$orderby = "{$col_name}";
-			$order = "{$order_dir}";
+			$col_num   = absint( $_GET['order'][0]['column'] );
+			$col_name  = sanitize_text_field( wp_unslash( $_GET['columns'][$col_num]['data'] ) );
+			$order_dir = sanitize_text_field( wp_unslash( $_GET['order'][0]['dir'] ) );
+			$orderby   = "`{$col_name}`";
+			$order     = "{$order_dir}";
 		}
-		
-		//$sql = "SELECT * from {$this->table}{$where}{$order}{$limit_query};";
+
+		// If there is something to search for we need to add the search query to the query.
 		if ( ! empty( $prepare_array ) ) {
-			$prepare_array[] = $orderby;
-			$sql = $this->db->prepare( "SELECT * from {$this->table} WHERE {$where} ORDER BY %s {$order} LIMIT {$limit_query};", $prepare_array );
+
+			$sql = $this->db->prepare( "SELECT * from {$this->table} WHERE {$where} ORDER BY {$orderby} {$order} LIMIT {$limit_query};", $prepare_array );
 		} else {
-			$sql = $this->db->prepare( "SELECT * from {$this->table} ORDER BY %s {$order} LIMIT {$limit_query};", $orderby );
+			$sql = $this->db->prepare( "SELECT * from {$this->table} ORDER BY {$orderby} {$order} LIMIT {$limit_query};", $orderby );
 		}
-		var_dump($sql);die();
+
 		error_log( $sql );
 
 		return $this->db->get_results( $sql, ARRAY_A );
