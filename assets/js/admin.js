@@ -1,32 +1,32 @@
 jQuery(document).ready(function ($) {
 
     $('form[name="wp_smtp_form"] input[type="submit"]').on('click', function (event) {
-            event.preventDefault();
+        event.preventDefault();
 
-            let submitButton = $(this);
-            submitButton.val(wp_smtp_admin_vars.checking_credentials);
-            let form = $(this).closest('form');
-            let inputs = {};
+        let submitButton = $(this);
+        submitButton.val(wp_smtp_admin_vars.checking_credentials);
+        let form = $(this).closest('form');
+        let inputs = {};
 
-            // Get all the inputs from the form
-            $(this).parents('form').find('input[type="text"]').each(function (index, element) {
+        // Get all the inputs from the form
+        $(this).parents('form').find('input[type="text"]').each(function (index, element) {
 
-                    switch ($(element).attr('name')) {                    
-                        case 'wp_smtp_host':
-                            inputs.host = $(element).val();
-                            break;
-                        case 'wp_smtp_port':
-                            inputs.port = $(element).val();
-                            break;
-                        case 'wp_smtp_username':
-                            inputs.username = $(element).val();
-                            break;
-                    };
-            });
+            switch ($(element).attr('name')) {
+                case 'wp_smtp_host':
+                    inputs.host = $(element).val();
+                    break;
+                case 'wp_smtp_port':
+                    inputs.port = $(element).val();
+                    break;
+                case 'wp_smtp_username':
+                    inputs.username = $(element).val();
+                    break;
+            };
+        });
 
-            inputs.password = $('input[name="wp_smtp_password"]').val();
-            inputs.smtpsecure = $('input[name="wp_smtp_smtpsecure"]:checked').val();
-            inputs.smtpauth = $('input[name="wp_smtp_smtpauth"]:checked').val();
+        inputs.password = $('input[name="wp_smtp_password"]').val();
+        inputs.smtpsecure = $('input[name="wp_smtp_smtpsecure"]:checked').val();
+        inputs.smtpauth = $('input[name="wp_smtp_smtpauth"]:checked').val();
 
         const options = {
             method: 'POST',
@@ -41,7 +41,7 @@ jQuery(document).ready(function ($) {
                     form.submit();
                 } else {
                     submitButton.val(wp_smtp_admin_vars.save_changes);
-                    submitButton.after('<p class="wp-smtp error">'+response.data.error+'</p>');
+                    submitButton.after('<p class="wp-smtp error">' + response.data.error + '</p>');
                 }
             }
         };
