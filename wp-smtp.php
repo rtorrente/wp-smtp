@@ -50,7 +50,7 @@ class WP_SMTP {
 
 		$this->setup_vars();
 		$this->hooks();
-		$this->check_credentials( $this->wsOptions );
+		$this->check_credentials();
 	}
 
 	public function setup_vars(){
@@ -65,12 +65,13 @@ class WP_SMTP {
 		add_action( 'init', array( $this,'load_textdomain' ) );
 		add_action( 'phpmailer_init', array( $this,'wp_smtp' ) );
 		add_action( 'wp_smtp_admin_update', array( $this, 'check_credentials' ) );
+		add_action( 'wp_ajax_wp_smtp_save_settings', array( $this, 'ajax_check_credentials' ) );
 
 		new WPSMTP\Admin();
 		new WPSMTP\Process();
 	}
 
-	function wp_smtp_activate(){
+	public function wp_smtp_activate(){
 		$wsOptions = array();
 		$wsOptions["from"] = "";
 		$wsOptions["fromname"] = "";
@@ -88,18 +89,18 @@ class WP_SMTP {
 
 	}
 
-	function wp_smtp_deactivate() {
+	public function wp_smtp_deactivate() {
 		if( $this->wsOptions['deactivate'] == 'yes' ) {
 			delete_option( 'wp_smtp_options' );
 			delete_option( 'wp_smtp_encrypted' );
 		}
 	}
 
-	function load_textdomain() {
+	public function load_textdomain() {
 		load_plugin_textdomain( 'wp-smtp', false, dirname( plugin_basename( __FILE__ ) ) . '/lang' );
 	}
 
-	function wp_smtp( $phpmailer ) {
+	public function wp_smtp( $phpmailer ) {
 
 		if( ! is_email($this->wsOptions["from"] ) || empty( $this->wsOptions["host"] ) ) {
 			return;
@@ -121,7 +122,7 @@ class WP_SMTP {
 		}
 	}
 
-	function wp_smtp_settings_link($action_links,$plugin_file) {
+	public function wp_smtp_settings_link($action_links,$plugin_file) {
 		if( $plugin_file == plugin_basename( __FILE__ ) ) {
 
 			$ws_settings_link = '<a href="admin.php?page=wpsmtp_logs">' . __("Logs") . '</a>';
@@ -142,9 +143,9 @@ class WP_SMTP {
 	 * @return mixed
 	 * @since 1.2.5
 	 */
-	public function check_credentials( $options = array() ) {
+	public function check_credentials( $options = array(), $pass_ajax = false ) {
 
-		if ( ! is_admin() || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
+		if ( ! is_admin() || ( ! $pass_ajax && defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
 			return;
 		}
 
@@ -152,12 +153,15 @@ class WP_SMTP {
 
 		// Connecting to host can be a resource heavy task, so we only do it if we need to.
 		if ( 'encrypted' === $encription ) {
-			return;
+			return true;
 		}
+
 		// Connecting to host can be a resource heavy task, so we only do it if we need to.
 		if ( 'not_encrypted' === $encription ) {
 			add_action( 'admin_notices', array( $this, 'retype_credentials_notice' ) );
-			return;
+			add_action( 'wp_smtp_admin_notices', array( $this, 'retype_credentials_wp_smtp_notice' ) );
+
+			return false;
 		}
 
 		if ( empty( $options ) ) {
@@ -165,7 +169,7 @@ class WP_SMTP {
 		}
 
 		if ( ! isset( $options['username'] ) || ! isset( $options['password'] ) || ! isset( $options['host'] ) || ! isset( $options['port'] ) || ! isset( $options['smtpauth'] ) || ! isset( $options['smtpsecure'] ) || '' === $options['username'] || '' === $options['password'] || '' === $options['host'] || '' === $options['port'] || '' === $options['smtpauth'] ) {
-			return;
+			return false;
 		}
 
 		global $phpmailer;
@@ -178,11 +182,17 @@ class WP_SMTP {
 			$phpmailer = new PHPMailer\PHPMailer\PHPMailer( true );
 		}
 
-		$phpmailer->isSMTP();
-		$phpmailer->Mailer   = "smtp";
-		$phpmailer->Host     = $options['host'];
-		$phpmailer->SMTPAuth = 'yes' === $options['smtpauth']; // Ask it to use authenticate using the Username and Password properties
-		$phpmailer->Port     = $options['port'];
+		// Set the timeout to 15 seconds, so if it doesn't connect to not let the user in standby.
+		$smtp                      = $phpmailer->getSMTPInstance();
+		$smtp->Timeout             = 15;
+		$smtp->Timelimit           = 15;
+		$phpmailer->Timeout        = 15;
+		$phpmailer->Timelimit      = 15;
+		$phpmailer->Mailer         = "smtp";
+		$phpmailer->Host           = $options['host'];
+		$phpmailer->SMTPAuth       = 'yes' === $options['smtpauth']; // Ask it to use authenticate using the Username and Password properties
+		$phpmailer->Port           = $options['port'];
+		$phpmailer->SMTPKeepAlive  = false;
 
 		if ( $phpmailer->SMTPAuth ) {
 			$phpmailer->Username = base64_decode( $options['username'] );
@@ -193,6 +203,7 @@ class WP_SMTP {
 
 		try {
 			if ( $phpmailer->smtpConnect() ) {
+				remove_action( 'admin_notices', array( $this, 'retype_credentials_notice' ) );
 				update_option( 'wp_smtp_status', 'encrypted' );
 				return true;
 			} else {
@@ -214,19 +225,41 @@ class WP_SMTP {
 	 * @since 1.2.5
 	 */
 	public function retype_credentials_notice() {
-	?>
-	<div class="notice notice-error is-dismissible">
-		<h3><?php echo esc_html__( 'WP SMTP connection error', 'wp-smtp' ); ?></h3>
-		<p><?php echo esc_html__( 'Seems like there are some problems with the enterd information. Please re-check & re-enter it and hit the "Save changes" button.', 'wp-smtp' ); ?></p>
-		<?php
-		// This might be a problem introduced in version 1.2.4 of the plugin when we started to base64_encode the username and password. Let the user know
-		if ( version_compare( '1.2.8', WPSMTP_VERSION, '>' ) ) {
-			echo '<p>' . esc_html__( 'We recently made some changes regarding how we save the username and password in the database, namely we are encrypting them, so that might be the reason for the connection error. Re-entering and saving them should solve the issue.', 'wp-smtp' ) . '</p>';
-		}
+
 		?>
-	</div>
-	<?php
+		<div class="notice notice-error is-dismissible">
+			<h3><?php echo esc_html__( 'WP SMTP connection error', 'wp-smtp' ); ?></h3>
+			<p><?php echo esc_html__( 'Seems like there are some problems with the enterd information. Please re-check & re-enter it and hit the "Save changes" button.', 'wp-smtp' ); ?></p>
+			<?php
+			// This might be a problem introduced in version 1.2.4 of the plugin when we started to base64_encode the username and password. Let the user know
+			if ( version_compare( '1.2.8', WPSMTP_VERSION, '>' ) ) {
+				echo '<p>' . esc_html__( 'We recently made some changes regarding how we save the username and password in the database, namely we are encrypting them, so that might be the reason for the connection error. Re-entering and saving them should solve the issue.', 'wp-smtp' ) . '</p>';
+			}
+			?>
+		</div>
+		<?php
 	}
+
+	public function ajax_check_credentials() {
+
+		check_ajax_referer( 'wpsmtp_settings_nonce', 'nonce' );
+
+		// Let's delete the status option, so that if the user hits the "Save changes" button, it will be re-checked.
+		delete_option( 'wp_smtp_status' );
+		$options = $_POST['inputs'];
+		$options['username'] = base64_encode( $options['username'] );
+		$options['password'] = base64_encode( $options['password'] );
+		$options['port']     = intval( $options['port'] );
+
+		if( $this->check_credentials( $options, true ) ) {
+			wp_send_json_success();
+		} else {
+			$data['error'] = esc_html__( 'There was an error connecting to the SMTP server. Please check your host and credentials and try again.', 'wp-smtp' );
+			wp_send_json_error($data);
+		}
+
+	}
+
 }
 
 new WP_SMTP();

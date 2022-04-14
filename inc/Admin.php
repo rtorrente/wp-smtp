@@ -33,24 +33,32 @@ class Admin {
 			return;
 		}
 
-		if ( $screen->id !== 'wp-smtp_page_wpsmtp_logs' ) {
-			return;
+		if ( $screen->id === 'wp-smtp_page_wpsmtp_logs' ) {
+			wp_enqueue_style( 'wpsmtp-table', WPSMTP_ASSETS_URL . 'css/table.css' );
+			wp_enqueue_style( 'datatable', 'https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css' );
+
+			wp_register_script( 'datatable', 'https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js', array( 'jquery' ), false, true );
+			wp_register_script( 'dataTables.buttons', 'https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js', array( 'datatable' ), false, true );
+			wp_register_script( 'buttons.html5', 'https://cdn.datatables.net/buttons/1.6.2/js/buttons.html5.min.js', array( 'datatable', 'dataTables.buttons' ), false, true );
+			wp_register_script( 'dataTables.select', 'https://cdn.datatables.net/select/1.3.1/js/dataTables.select.min.js', array( 'datatable', 'buttons.html5' ), false, true );
+
+			wp_register_script( 'wpsmtp-table', WPSMTP_ASSETS_URL . 'js/table.js', array('jquery', 'dataTables.select'),false, true );
+			wp_localize_script( 'wpsmtp-table', 'wpsmtp', array(
+				'ajaxurl' => admin_url('admin-ajax.php'),
+			) );
+
+			wp_enqueue_script('wpsmtp-table');
 		}
 
-		wp_enqueue_style( 'wpsmtp-table', WPSMTP_ASSETS_URL . 'css/table.css' );
-		wp_enqueue_style( 'datatable', 'https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css' );
+		if ( false !== strpos( $screen->base, 'wp-smtp/wp-smtp' ) ) {
+			wp_enqueue_script( 'wp-smtp-admin', WPSMTP_ASSETS_URL . 'js/admin.js', array( 'jquery' ), false, true );
+			wp_localize_script( 'wp-smtp-admin', 'wp_smtp_admin_vars', array(
+				'nonce' => wp_create_nonce( 'wpsmtp_settings_nonce' ),
+			) );
 
-		wp_register_script( 'datatable', 'https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js', array( 'jquery' ), false, true );
-		wp_register_script( 'dataTables.buttons', 'https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js', array( 'datatable' ), false, true );
-		wp_register_script( 'buttons.html5', 'https://cdn.datatables.net/buttons/1.6.2/js/buttons.html5.min.js', array( 'datatable', 'dataTables.buttons' ), false, true );
-		wp_register_script( 'dataTables.select', 'https://cdn.datatables.net/select/1.3.1/js/dataTables.select.min.js', array( 'datatable', 'buttons.html5' ), false, true );
+		}
 
-		wp_register_script( 'wpsmtp-table', WPSMTP_ASSETS_URL . 'js/table.js', array('jquery', 'dataTables.select'),false, true );
-		wp_localize_script( 'wpsmtp-table', 'wpsmtp', array(
-			'ajaxurl' => admin_url('admin-ajax.php'),
-		) );
-
-		wp_enqueue_script('wpsmtp-table');
+		
 	}
 
 	function render_setup_menu() {

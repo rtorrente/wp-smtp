@@ -33,7 +33,6 @@ if (isset($_POST['wp_smtp_update']) && isset($_POST['wp_smtp_nonce_update'])) {
         echo '<div id="message" class="updated fade"><p><strong>' . esc_html__("Options saved.", "WP-SMTP") . '</strong></p></div>';
     }
 
-    delete_option( 'wp_smtp_status' );
     do_action( 'wp_smtp_admin_update' );
 }
 
