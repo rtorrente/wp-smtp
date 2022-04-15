@@ -17,7 +17,7 @@ If the field "From" was not a valid email address, or the field "SMTP Host" was 
 
 = CREDITS =
 
-WP SMTP plugin was originally created by BoLiQuan. It is now owned and maintained by Yehuda Hassine.
+WP SMTP plugin was originally created by BoLiQuan. It is now owned and maintained by WPChill.
 
 = Usage =
 
