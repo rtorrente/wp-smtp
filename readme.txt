@@ -36,7 +36,8 @@ WP SMTP plugin was originally created by BoLiQuan. It is now owned and maintaine
 == Changelog ==
 
 = 1.2.5 =
-Fixed: base64_encoding problem for passwords and users that may appear that they are already in base64_encoding but in reality they are not
+Fixed: base64_encoding problem for passwords and users that may appear that they are already in base64_encoding but in reality they are not ( https://github.com/WPChill/wp-smtp/issues/7 )
+Changed: Removed CDN files and added them locally ( https://github.com/WPChill/wp-smtp/issues/8 )
 
 = 1.2.4 =
 Changed: Added base64 encode for username and passwords ( https://github.com/WPChill/wp-smtp/issues/2 )
