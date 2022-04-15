@@ -4,6 +4,41 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $ws_nonce = wp_create_nonce( 'my_ws_nonce' );
+
+// Catch the test form
+if ( isset( $_POST['wp_smtp_test'] ) && isset( $_POST['wp_smtp_nonce_test'] ) ) {
+
+	if ( ! wp_verify_nonce( trim( $_POST['wp_smtp_nonce_test'] ), 'my_ws_nonce' ) ) {
+		wp_die( 'Security check not passed!' );
+	}
+
+	$to      = sanitize_email( wp_unslash( trim( $_POST['wp_smtp_to'] ) ) );
+	$subject = sanitize_text_field( trim( $_POST['wp_smtp_subject'] ) );
+	$message = sanitize_textarea_field( trim( $_POST['wp_smtp_message'] ) );
+	$status  = false;
+	$class   = 'error';
+
+	if ( ! empty( $to ) && is_email( $to ) && ! empty( $subject ) && ! empty( $message ) ) {
+		try {
+			$result = wp_mail( $to, $subject, $message );
+		} catch ( Exception $e ) {
+			$status = $e->getMessage();
+		}
+	} else {
+		$status = __( 'Some of the test fields are empty or an invalid email supplied', 'wp-smtp' );
+	}
+
+	if ( ! $status ) {
+		if ( $result === true ) {
+			$status = __( 'Message sent!', 'wp-smtp' );
+			$class  = 'success';
+		} else {
+			$status = \WPSMTP\Admin::$phpmailer_error->get_error_message();
+		}
+	}
+
+	echo '<div id="message" class="notice notice-' . esc_attr( $class ) . ' is-dismissible"><p><strong>' . wp_kses_post( $status ) . '</strong></p></div>';
+}
 ?>
 <div class="wrap">
 
