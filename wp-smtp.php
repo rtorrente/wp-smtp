@@ -48,7 +48,6 @@ class WP_SMTP {
 
 	public function __construct() {
 
-		$this->setup_vars();
 		$this->hooks();
 		$this->check_credentials();
 	}
@@ -64,9 +63,15 @@ class WP_SMTP {
 		add_filter( 'plugin_action_links', array( $this, 'wp_smtp_settings_link' ), 10, 2 );
 		add_action( 'init', array( $this,'load_textdomain' ) );
 		add_action( 'phpmailer_init', array( $this,'wp_smtp' ) );
+		add_action( 'admin_notices', array( $this, 'retype_credentials_notice' ) );
 		add_action( 'wp_smtp_admin_update', array( $this, 'check_credentials' ) );
-		add_action( 'wp_ajax_wp_smtp_save_settings', array( $this, 'ajax_check_credentials' ) );
+		add_action( 'wp_loaded', array( $this, 'wp_smtp_form_actions' ), 15 );
+		add_action( 'wp_loaded', array( $this, 'setup_vars' ), 20 );
+		add_action( 'wp_loaded', array( $this, 'load_admin_requirements'), 30 );
 
+	}
+
+	public function load_admin_requirements() {
 		new WPSMTP\Admin();
 		new WPSMTP\Process();
 	}
@@ -203,16 +208,13 @@ class WP_SMTP {
 
 		try {
 			if ( $phpmailer->smtpConnect() ) {
-				remove_action( 'admin_notices', array( $this, 'retype_credentials_notice' ) );
 				update_option( 'wp_smtp_status', 'encrypted' );
 				return true;
 			} else {
-				add_action( 'admin_notices', array( $this, 'retype_credentials_notice' ) );
 				update_option( 'wp_smtp_status', 'not_encrypted' );
 				return false;
 			}
 		} catch ( Exception $e ) {
-			add_action( 'admin_notices', array( $this, 'retype_credentials_notice' ) );
 			update_option( 'wp_smtp_status', 'not_encrypted' );
 			return false;
 		}
@@ -225,6 +227,12 @@ class WP_SMTP {
 	 * @since 1.2.5
 	 */
 	public function retype_credentials_notice() {
+
+		$status = get_option( 'wp_smtp_status' );
+
+		if ( ! $status || 'not_encrypted' !== $status) {
+			return;
+		}
 
 		?>
 		<div class="notice notice-error is-dismissible">
@@ -240,24 +248,74 @@ class WP_SMTP {
 		<?php
 	}
 
-	public function ajax_check_credentials() {
+	/**
+	 * Save WP SMTP options
+	 */
+	public function wp_smtp_form_actions() {
 
-		check_ajax_referer( 'wpsmtp_settings_nonce', 'nonce' );
+		// Catch the SMTP settings
+		if (isset($_POST['wp_smtp_update']) && isset($_POST['wp_smtp_nonce_update'])) {
+			if (!wp_verify_nonce(trim($_POST['wp_smtp_nonce_update']), 'my_ws_nonce')) {
+				wp_die('Security check not passed!');
+			}
 
-		// Let's delete the status option, so that if the user hits the "Save changes" button, it will be re-checked.
-		delete_option( 'wp_smtp_status' );
-		$options = $_POST['inputs'];
-		$options['username'] = base64_encode( $options['username'] );
-		$options['password'] = base64_encode( $options['password'] );
-		$options['port']     = intval( $options['port'] );
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_die('Security check not passed!');
+			}
 
-		if( $this->check_credentials( $options, true ) ) {
-			wp_send_json_success();
-		} else {
-			$data['error'] = esc_html__( 'There was an error connecting to the SMTP server. Please check your host and credentials and try again.', 'wp-smtp' );
-			wp_send_json_error($data);
+			$this->wsOptions                 = array();
+			$this->wsOptions["from"]         = sanitize_email( wp_unslash( trim( $_POST['wp_smtp_from'] ) ) );
+			$this->wsOptions["fromname"]     = sanitize_text_field( trim( $_POST['wp_smtp_fromname'] ) );
+			$this->wsOptions["host"]         = sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_host'] ) ) );
+			$this->wsOptions["smtpsecure"]   = sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_smtpsecure'] ) ) );
+			$this->wsOptions["port"]         = is_numeric( trim( $_POST['wp_smtp_port'] ) ) ? absint( trim( $_POST['wp_smtp_port'] ) ) : '';
+			$this->wsOptions["smtpauth"]     = sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_smtpauth'] ) ) );
+			$this->wsOptions["username"]     = base64_encode( defined( 'WP_SMTP_USER' ) ? WP_SMTP_USER : sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_username'] ) ) ) );
+			$this->wsOptions["password"]     = base64_encode( defined( 'WP_SMTP_PASS' ) ? WP_SMTP_PASS : sanitize_text_field( trim( $_POST['wp_smtp_password'] ) ) );
+			$this->wsOptions["deactivate"]   = ( isset($_POST['wp_smtp_deactivate'] ) ) ? sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_deactivate'] ) ) ) : '';
+			$this->wsOptions["disable_logs"] = ( isset($_POST['wp_smtp_disable_logs'] ) ) ? sanitize_text_field( wp_unslash( trim( $_POST['wp_smtp_disable_logs'] ) ) ) : '';
+
+			update_option("wp_smtp_options", $this->wsOptions);
+
+			// Let's delete the status option, so that if the user hits the "Save changes" button, it will be re-checked.
+			delete_option( 'wp_smtp_status' );
+			do_action( 'wp_smtp_admin_update' );
 		}
 
+		// Catch the test form
+		if ( isset( $_POST['wp_smtp_test'] ) && isset( $_POST['wp_smtp_nonce_test'] ) ) {
+
+			if ( ! wp_verify_nonce( trim( $_POST['wp_smtp_nonce_test'] ), 'my_ws_nonce' ) ) {
+				wp_die('Security check not passed!');
+			}
+
+			$to      = sanitize_email( wp_unslash( trim( $_POST['wp_smtp_to'] ) ) );
+			$subject = sanitize_text_field( trim( $_POST['wp_smtp_subject'] ) );
+			$message = sanitize_textarea_field( trim( $_POST['wp_smtp_message'] ) );
+			$status  = false;
+			$class   = 'error';
+
+			if ( ! empty( $to ) && is_email( $to ) && ! empty( $subject ) && ! empty( $message ) ) {
+				try {
+					$result = wp_mail( $to, $subject, $message );
+				} catch (Exception $e) {
+					$status = $e->getMessage();
+				}
+			} else {
+				$status = __( 'Some of the test fields are empty or an invalid email supplied', 'wp-smtp' );
+			}
+
+			if ( ! $status ) {
+				if ( $result === true ) {
+					$status = __( 'Message sent!', 'wp-smtp' );
+					$class = 'success';
+				} else {
+					$status = \WPSMTP\Admin::$phpmailer_error->get_error_message();
+				}
+			}
+
+			echo '<div id="message" class="notice notice-' . esc_attr( $class ) . ' is-dismissible"><p><strong>' . wp_kses_post( $status ) . '</strong></p></div>';
+		}
 	}
 
 }
