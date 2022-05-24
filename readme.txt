@@ -3,7 +3,7 @@ Tags: wp smtp,smtp,mail,email,logs,mailer,wp mail,gmail,yahoo,mail smtp,ssl,tls
 Contributors: wpchill,silkalns,raldea89,giucu91,andylukak
 License: GPLv3 or later
 Requires at least: 2.7
-Tested up to: 5.9
+Tested up to: 6.0
 Stable tag: 1.2.5
 
 WP SMTP can help us to send emails via SMTP instead of the PHP mail() function.
