@@ -210,19 +210,26 @@ if ( isset( $_POST['wp_smtp_test'] ) && isset( $_POST['wp_smtp_nonce_test'] ) ) 
 			</tr>
 			<tr valign="top">
 				<th scope="row">
-					<?php esc_html_e( 'Disable Logs', 'wp-smtp' ); ?>
+					<?php esc_html_e( 'Log level', 'wp-smtp' ); ?>
 				</th>
 				<td>
-					<label>
-						<input type="checkbox" name="wp_smtp_disable_logs"
-							   value="yes" 
-							   <?php
-								if ( isset( $this->wsOptions['disable_logs'] ) && 'yes' === $this->wsOptions['disable_logs'] ) {
-									echo 'checked="checked"';}
+					<select name="wp_smtp_disable_logs">
+					  <option value="no" <?php
+								if ( isset( $this->wsOptions['disable_logs'] ) && 'no' === $this->wsOptions['disable_logs'] ) {
+									echo 'selected';}
 								?>
-								 />
-						<?php esc_html_e( 'Disable the email logging functionality.', 'wp-smtp' ); ?>
-					</label>
+								><?php esc_html_e( 'All emails', 'wp-smtp' ); ?></option>
+					  <option value="error"" <?php
+								if ( isset( $this->wsOptions['disable_logs'] ) && 'error' === $this->wsOptions['disable_logs'] ) {
+									echo 'selected';}
+								?>
+								><?php esc_html_e( 'Only error', 'wp-smtp' ); ?></option>
+					  <option value="yes"" <?php
+								if ( isset( $this->wsOptions['disable_logs'] ) && 'yes' === $this->wsOptions['disable_logs'] ) {
+									echo 'selected';}
+								?>
+								><?php esc_html_e( 'No log', 'wp-smtp' ); ?></option>
+					</select>
 				</td>
 			</tr>
 		</table>

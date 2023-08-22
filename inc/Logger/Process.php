@@ -14,7 +14,7 @@ class Process {
 
 		$this->wsOptions = get_option( 'wp_smtp_options' );
 
-		if ( ! isset( $this->wsOptions['disable_logs'] ) || 'yes' !== $this->wsOptions['disable_logs'] ) {
+		if ( ! isset( $this->wsOptions['disable_logs'] ) || 'no' === $this->wsOptions['disable_logs'] ) {
 			add_filter( 'wp_mail', array( $this, 'log_mails' ), PHP_INT_MAX );
 		}
 
